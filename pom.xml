@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.17</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+    <groupId>io.github.swan-geese</groupId>
+    <artifactId>springboot-encryption</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>springboot-encryption</name>
+    <description>springboot-encryption</description>
+    <properties>
+        <java.version>11</java.version>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.15.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-core</artifactId>
+            <version>5.8.12</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <image>
+                        <builder>paketobuildpacks/builder-jammy-base:latest</builder>
+                    </image>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+
+            <!--
+                class-winter插件``
+                注:自Maven3.0.3起, 绑定到同一phase的Maven插件将按照pom.xml中声明的顺序执行
+                注:此插件最好放置在同一phase的最后执行。
+                注:此插件不具备打包功能，需要在此插件前有打包插件进行项目打包，否则加密不会生效。
+
+                通过 class-winter-core.jar 主动加密：
+                java -jar class-winter-core-2.8.6.jar originJarOrWar=${要加密的项目.jar或.war包} includePrefix=${加密范围} [k3=v3 k4=v4 ...]
+                解密(启动)：
+                java -javaagent:xxx-encrypted.jar='debug=true,password=123456' -jar xxx-encrypted.jar
+            -->
+            <plugin>
+                <groupId>com.idea-aedi</groupId>
+                <artifactId>class-winter-maven-plugin</artifactId>
+                <version>2.8.6</version>
+                <!-- 相关配置 -->
+                <configuration>
+                    <finalName>app</finalName>
+                    <includePrefix>io.github.swangeese,cn.hutool</includePrefix>
+                    <!-- <originJarOrWar>非必填（不填则自动获取）</originJarOrWar>-->
+                    <!--<excludePrefix>org.spring</excludePrefix>-->
+                    <!-- <includeXmlPrefix></includeXmlPrefix>-->
+                    <!-- <excludeXmlPrefix></excludeXmlPrefix>-->
+                    <!-- <toCleanXmlChildElementName></toCleanXmlChildElementName>-->
+                    <password>123456</password>
+                    <includeLibs>springboot-encryption-0.0.1-SNAPSHOT.jar,hutool-core-5.8.12.jar</includeLibs>
+                    <!-- <alreadyProtectedRootDir></alreadyProtectedRootDir>-->
+                    <!-- <alreadyProtectedLibs></alreadyProtectedLibs>-->
+                    <!-- <supportFile></supportFile>-->
+                    <!-- <jvmArgCheck></jvmArgCheck>-->
+                    <!-- <tips></tips>-->
+                    <!-- <debug></debug>-->
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>class-winter</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                ClassFinal插件``
+                参数说明：
+                -file        加密的jar/war完整路径
+                -packages    加密的包名(可为空,多个用","分割)
+                -libjars     jar/war包lib下要加密jar文件名(可为空,多个用","分割)
+                -cfgfiles    需要加密的配置文件，一般是classes目录下的yml或properties文件(可为空,多个用","分割)
+                -exclude     排除的类名(可为空,多个用","分割)
+                -classpath   外部依赖的jar目录，例如/tomcat/lib(可为空,多个用","分割)
+                -pwd         加密密码，如果是#号，则使用无密码模式加密
+                -code        机器码，在绑定的机器生成，加密后只可在此机器上运行
+                -Y           无需确认，不加此参数会提示确认以上信息
+
+                启动加密后的jar:
+                java -javaagent:xxx-encrypted.jar='-pwd 123456' -jar xxx-encrypted.jar
+            -->
+            <!--
+                <plugin>
+                    <groupId>net.roseboy</groupId>
+                    <artifactId>classfinal-maven-plugin</artifactId>
+                    <version>1.2.1</version>
+                    <configuration>
+                        <password>123456</password>
+                        <packages>io.github.swangeese,cn.hutool</packages>
+                        <cfgfiles>application.yml</cfgfiles>
+                        <excludes>org.spring</excludes>
+                        <libjars>springboot-encryption-0.0.1-SNAPSHOT.jar,hutool-core-5.8.12.jar</libjars>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>classFinal</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            -->
+
+        </plugins>
+    </build>
+
+</project>
